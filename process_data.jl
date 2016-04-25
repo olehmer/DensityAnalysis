@@ -36,11 +36,12 @@ function findsmallplanets()
       push!(smalls, i)
       temp = planetary_temp[i,1]
       name = names[i]
-      @printf("%11s Mass=%6.3f (EM), density=%6.3f (g/cm3), temp=%8.3f (K)\n", name, emass, density, temp)
+      star_temp = stellar_temp[i,1]
+      dist = orbital_dist[i,1]
+      @printf("%2d. %11s Mass=%6.3f (EM), density=%6.3f (g/cm3), planet temp=%8.3f (K), dist=%6.3f (AU), star temp=%4.0f (K)\n",length(smalls), name, emass, density, temp, dist, star_temp)
     end
   end
 
-  @printf("Total of %d exoplanets known with these characteristics",length(smalls))
 end
 
 findsmallplanets()
