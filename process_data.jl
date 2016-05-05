@@ -1,3 +1,7 @@
+#=
+Data taken from: http://www.astro.keele.ac.uk/jkt/tepcat/tepcat.html
+=#
+
 using PyPlot
 
 type Planet
@@ -50,7 +54,7 @@ function findsmallplanets()
   for i=1:length(names)
     emass = planet_masses[i,1]/0.00314647 #mass of earth in MJup units
     density = planet_density[i,1]*1.33 #density of jupiter in g/cm^3
-    if 0.0 < emass < 10.0 && 20 > density > 0 #less than 10 earth masses
+    if 0.0 < emass < 10.0 && density > 0 #less than 10 earth masses
       temp = planetary_temp[i,1]
       name = names[i]
       star_temp = stellar_temp[i,1]
