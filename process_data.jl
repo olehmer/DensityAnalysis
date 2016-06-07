@@ -163,9 +163,17 @@ function create_planet_array()
         p.gravity = planet_gravity[i,1]
         p.period = orbital_period[i]
         p.eccentricity = eccentricity[i]
-        p.mass = planet_masses[i,1]
+        if planet_masses[i,1] == 0
+          p.mass = planet_masses[i,2]
+        else
+          p.mass = planet_masses[i,1]
+        end
         p.distance = orbital_dist[i,1]
-        p.radius = planet_radii[i,1]
+        if planet_radii[i,1] == 0
+          p.radius = planet_radii[i,2]
+        else
+          p.radius = planet_radii[i,1]
+        end
         p.density = planet_density[i,1]
         p.density_e_p = planet_density[i,2] #positive density error
         p.density_e_m = planet_density[i,3] #negative density error
@@ -324,22 +332,57 @@ function generate_flux_v_vesc()
     return (vesc, vimp)
   end
 
-  y = []
-  x = []
-  z = []
+  y1 = []
+  x1 = []
+  z1 = []
+
+  y2 = []
+  x2 = []
+  z2 = []
+
+  y3 = []
+  x3 = []
+  z3 = []
   for p in planets
     if p.density > 0 && p.mass > 0 && p.radius > 0 && p.period > 0 && p.distance > 0
       vesc, vimp = vesc_vimp(p.mass, p.radius, p.period, p.distance)
-      push!(y,p.flux/1366)
-      push!(x,vesc/1000)
-      push!(z,p.distance)
+
+      if p.density*rho_jup < 3
+        push!(y1,p.flux/1366)
+        push!(x1,vesc/1000)
+        push!(z1,p.density*rho_jup)
+      elseif p.density*rho_jup < 10
+        push!(y2,p.flux/1366)
+        push!(x2,vesc/1000)
+        push!(z2,p.density*rho_jup)
+      else
+        push!(y3,p.flux/1366)
+        push!(x3,vesc/1000)
+        push!(z3,p.density*rho_jup)
+      end
+
+      if vesc/1000 > 175 || vesc/1000 < 14 || p.name == "Kepler-10b" || p.name == "CoRoT-07"
+        annotate(p.name, xy=(vesc/1000, p.flux/1366), textcoords="data")
+      end
+
     end
   end
 
+  sc1 = scatter(x1,y1, c=z1, cmap="cool")#, norm=COL.LogNorm(vmin=minimum(z1), vmax=maximum(z1)))
+  cbar1 = colorbar(sc1, pad = 0.003)
+  cbar1[:ax][:set_ylabel]("Density [g/cc]")
 
-  sc = scatter(x,y, c=z, norm=COL.LogNorm(vmin=minimum(z), vmax=maximum(z)))
-  cbar = colorbar(sc)
-  cbar[:ax][:set_ylabel]("Distance [AU]")
+  sc2 = scatter(x2,y2, c=z2, cmap="autumn")#, norm=COL.LogNorm(vmin=minimum(z2), vmax=maximum(z2)))
+  cbar2 = colorbar(sc2, pad = 0.003)
+
+  sc3 = scatter(x3,y3, c=z3, cmap="Greys")#, norm=COL.LogNorm(vmin=minimum(z3), vmax=maximum(z3)))
+  cbar3 = colorbar(sc3, pad = 0.03)
+
+
+  #sc = scatter(x,y, c=z, norm=COL.LogNorm(vmin=minimum(z), vmax=maximum(z)))
+
+
+
   #xscale("log")
   #yscale("log")
   title("Flux VS Escape Velocity")
@@ -349,20 +392,12 @@ function generate_flux_v_vesc()
   sp = init_solar_system_planets()
   for p in sp
     vesc, vimp = vesc_vimp(p.mass, p.radius, p.period, p.distance)
-    plot([vesc/1000], [p.flux/1366], label=p.name, marker="*", markersize=20, linestyle = "None")
+    plot([vesc/1000], [p.flux/1366], label=p.name, marker="*", markersize=10, linestyle = "None")
   end
 
-  for p in planets
-    if p.name == "Kepler-10b"
-      vesc, vimp = vesc_vimp(p.mass, p.radius, p.period, p.distance)
-      plot([vesc/1000], [p.flux/1366], label=p.name, marker="v", markersize=20, linestyle = "None")
-    end
-
-    if p.name == "CoRoT-07"
-      vesc, vimp = vesc_vimp(p.mass, p.radius, p.period, p.distance)
-      plot([vesc/1000], [p.flux/1366], label=p.name, marker="s", markersize=20, linestyle = "None")
-    end
-  end
+  plot((0.2,80),(10.0^-6,10^4),"--")
+  xlim(10.0^0.5,10^3)
+  ylim(10.0^-4,10.0^4)
 
   legend(numpoints=1, loc="upper left") #loc="upper left"
 
@@ -426,5 +461,60 @@ function generate_vescDorb_v_rho()
   show()
 end
 
-#generate_flux_v_vesc()
-generate_rho_v_dist()
+function generate_vescDorb_v_vesc()
+  planets = create_planet_array()
+
+  function vesc_vimp(mass, radius, period, distance)
+    vesc = (2*G*mass*M_jup/(radius*R_jup))^0.5 #[m/s]
+    vorb = 2*pi*distance*AU/(period*24*3600) #orbital velcity [m/s]
+    venc = 0.5*vorb
+    vimp = (vesc^2+venc^2)^0.5
+
+    return (vesc, vimp)
+  end
+
+  y = []
+  x = []
+  z = []
+  for p in planets
+    if p.mass > 0 && p.radius > 0 && p.period > 0 && p.distance > 0
+      vesc, vimp = vesc_vimp(p.mass, p.radius, p.period, p.distance)
+      push!(y,vimp/vesc)
+      push!(x,vesc)
+      push!(z,p.flux/1366)
+
+
+      if y[end] > 4 || p.name == "Kepler-42c"
+        annotate(p.name, xy=(x[end]/1000, y[end]), textcoords="data")
+      end
+    end
+  end
+
+
+  sc = scatter(x./1000,y, c=z, norm=COL.LogNorm(vmin=minimum(z), vmax=maximum(z)))
+  cbar = colorbar(sc)
+  cbar[:ax][:set_ylabel]("Stellar Flux [Earth Solar Fluxes]")
+  xscale("log")
+  #yscale("log")
+  title("Impact Velocity / Escape Velocity VS Escape Velocity")
+  xlabel("Escape Velocity [km/s]")
+  ylabel("Impact/Escape Velocity [km/s]")
+
+  sp = init_solar_system_planets()
+  for p in sp
+    vesc, vimp = vesc_vimp(p.mass, p.radius, p.period, p.distance)
+    plot([vesc/1000], [vimp/vesc], label=p.name, marker="*", markersize=10, linestyle = "None")
+  end
+
+  legend(numpoints=1) #loc="upper left"
+
+  plot((0,1000),(5,5),"--")
+  xlim(0,1000)
+  #annotate("local max", xy=(3, 1), xytext=(0.8, 0.95))
+
+  show()
+end
+
+generate_flux_v_vesc()
+#generate_vescDorb_v_vesc()
+#generate_rho_v_dist()
