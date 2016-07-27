@@ -391,15 +391,22 @@ function generate_flux_v_vesc()
 
   sp = init_solar_system_planets()
   for p in sp
-    vesc, vimp = vesc_vimp(p.mass, p.radius, p.period, p.distance)
-    plot([vesc/1000], [p.flux/1366], label=p.name, marker="*", markersize=10, linestyle = "None")
+    if p.name == "Earth" || p.name == "Mars" || p.name == "Venus"
+      colr = (1,104/255,0)
+      if p.name == "Mars"
+        colr = "Red"
+      end
+      vesc, vimp = vesc_vimp(p.mass, p.radius, p.period, p.distance)
+      plot([vesc/1000], [p.flux/1366], label=p.name, marker="*", markersize=10, c=colr, linestyle = "None")
+      annotate(p.name, xy=(vesc/1000, p.flux/1366), textcoords="data")
+    end
   end
 
-  plot((0.2,80),(10.0^-6,10^4),"--")
+  plot((3.0,40),(3*10.0^-2,10^4),"--")
   xlim(10.0^0.5,10^3)
-  ylim(10.0^-4,10.0^4)
+  ylim(2*10.0^-1,10.0^4)
 
-  legend(numpoints=1, loc="upper left") #loc="upper left"
+  #legend(numpoints=1, loc="upper left") #loc="upper left"
 
   #annotate("local max", xy=(3, 1), xytext=(0.8, 0.95))
   xscale("log")
